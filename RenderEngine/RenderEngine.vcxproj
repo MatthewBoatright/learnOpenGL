@@ -114,6 +114,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\objects\element_buffer.cpp" />
+    <ClCompile Include="src\objects\vertex_array.cpp" />
+    <ClCompile Include="src\objects\vertex_buffer.cpp" />
+    <ClCompile Include="src\utils\fileUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -121,6 +125,12 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\shaders\basicShader.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\objects\element_buffer.h" />
+    <ClInclude Include="src\objects\vertex_array.h" />
+    <ClInclude Include="src\objects\vertex_buffer.h" />
+    <ClInclude Include="src\utils\fileUtils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
