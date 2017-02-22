@@ -8,6 +8,7 @@
 #include <GLFW\glfw3.h>
 
 #include "utils\fileUtils.h"
+#include "shaders\shader.h"
 #include "objects\element_buffer.h"
 #include "objects\vertex_array.h"
 #include "objects\vertex_buffer.h"
@@ -21,7 +22,6 @@ const GLuint WIDTH = 1920, HEIGHT = 1080;
 
 // Prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
-GLuint LoadShader(const char* vertexPath, const char* fragmentPath);
 
 GLfloat vertices[] = {
 	 // Positions         // Colors        
@@ -76,7 +76,10 @@ int main()
 	glViewport(0, 0, width, height);
 
 	// Create a shader program
-	GLuint program = LoadShader(vertexShaderFilePath.c_str(), fragmentShaderFilePath.c_str());
+	//GLuint program = LoadShader(vertexShaderFilePath.c_str(), fragmentShaderFilePath.c_str());
+
+	Shader shader(vertexShaderFilePath.c_str(), fragmentShaderFilePath.c_str());
+
 
 	/* Without wrapper classes */
 	//GLuint VBO, VAO, EBO;
@@ -138,7 +141,11 @@ int main()
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
 		//glBindVertexArray(0);
 
-		glUseProgram(program);
+		GLfloat timeValue = glfwGetTime();
+		GLfloat greenValue = (sin(timeValue) / 2) + 0.5;
+		GLint vertexColorLocation = glGetUniformLocation(shader.getProgram(), "someUniform");
+		shader.use();
+		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 		vao.bind();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		vao.unbind();
@@ -166,63 +173,4 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	{
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
-}
-
-// Return the ID of a loaded shader
-GLuint LoadShader(const char* vertexPath, const char* fragmentPath)
-{
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-	// Read Shaders
-	std::string vertexShaderStr = getFileContents(vertexPath);
-	std::string fragmentShaderStr = getFileContents(fragmentPath);
-	const char* vertexShaderSrc = vertexShaderStr.c_str();
-	const char* fragmentShaderSrc = fragmentShaderStr.c_str();
-
-	GLint result = GL_FALSE;
-	int logLength;
-
-	// Compile vertex shader
-	std::cout << "Compiling vertex shader..." << std::endl;
-	glShaderSource(vertexShader, 1, &vertexShaderSrc, NULL);
-	glCompileShader(vertexShader);
-
-	// Check vertex shader
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &result);
-	glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> vertexShaderError((logLength > 1) ? logLength : 1);
-	glGetShaderInfoLog(vertexShader, logLength, NULL, &vertexShaderError[0]);
-	std::cout << &vertexShaderError[0] << std::endl;
-
-	// Compile fragment shader
-	std::cout << "Compiling fragment shader..." << std::endl;
-	glShaderSource(fragmentShader, 1, &fragmentShaderSrc, NULL);
-	glCompileShader(fragmentShader);
-
-	// Check fragment shader
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &result);
-	glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> fragmentShaderError((logLength > 1) ? logLength : 1);
-	glGetShaderInfoLog(fragmentShader, logLength, NULL, &fragmentShaderError[0]);
-	std::cout << &fragmentShaderError[0] << std::endl;
-
-	// Link program
-	std::cout << "Linking program" << std::endl;
-	GLuint program = glCreateProgram();
-	glAttachShader(program, vertexShader);
-	glAttachShader(program, fragmentShader);
-	glLinkProgram(program);
-
-	// Check program
-	glGetProgramiv(program, GL_LINK_STATUS, &result);
-	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength);
-	std::vector<char> programError((logLength > 1) ? logLength : 1);
-	glGetProgramInfoLog(program, logLength, NULL, &programError[0]);
-	std::cout << &programError[0] << std::endl;
-
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-	return program;
 }
