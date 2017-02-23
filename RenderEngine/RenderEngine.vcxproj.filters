@@ -58,4 +58,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\brick_texture.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="assets\wood_texture.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="assets\awesomeface.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="assets\mipmaps.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

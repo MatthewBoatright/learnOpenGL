@@ -7,6 +7,8 @@
 #include <GL\glew.h>
 #include <GLFW\glfw3.h>
 
+#include <soil.h>
+
 #include "utils\fileUtils.h"
 #include "shaders\shader.h"
 #include "objects\element_buffer.h"
@@ -23,20 +25,37 @@ const GLuint WIDTH = 1920, HEIGHT = 1080;
 // Prototypes
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
+//GLfloat vertices[] = {
+//	 // Positions         // Colors        
+//	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f, // Top Right
+//	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f, // Bottom Right
+//	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f, // Bottom Left
+//	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f  // Top Left 
+//};
+//
+//GLuint indices[] = {  // Note that we start from 0!
+//	0, 1, 3,		  // First Triangle
+//	1, 2, 3			  // Second Triangle
+//};
+
 GLfloat vertices[] = {
-	 // Positions         // Colors        
-	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f, // Top Right
-	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f, // Bottom Right
-	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f, // Bottom Left
-	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f  // Top Left 
+	 // Positions         // Colors           // Texture Coords
+	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // Top Right
+	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // Bottom Right
+	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // Bottom Left
+	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // Top Left 
 };
+
 GLuint indices[] = {  // Note that we start from 0!
 	0, 1, 3,		  // First Triangle
 	1, 2, 3			  // Second Triangle
 };
 
+
 std::string vertexShaderFilePath = "src/shaders/basicShader.vert";
 std::string fragmentShaderFilePath = "src/shaders/basicShader.frag";
+std::string woodTextureFilePath = "assets/wood_texture.jpg";
+std::string awesomeFaceFilePath = "assets/awesomeface.png";
 
 int main()
 {
@@ -97,6 +116,56 @@ int main()
 	//glBindBuffer(GL_ARRAY_BUFFER, 0); // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
 	//glBindVertexArray(0); // Unbind VAO (it's always a good thing to unbind any buffer/array to prevent strange bugs), remember: do NOT unbind the EBO, keep it bound to this VAO
 
+	/* TEXTURES */
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	//float borderColor[] = { 1.0f, 1.0f, 0.0f, 1.0f };
+	//glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	// Load texture file using a library like SOIL or a custom image header
+	int t_width, t_height;
+	unsigned char* image = SOIL_load_image(woodTextureFilePath.c_str(), &t_width, &t_height, 0, SOIL_LOAD_RGB);
+
+	GLuint texture1;
+	glGenTextures(1, &texture1);
+	glBindTexture(GL_TEXTURE_2D, texture1);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t_width, t_height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	SOIL_free_image_data(image);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	unsigned char* image2 = SOIL_load_image(awesomeFaceFilePath.c_str(), &t_width, &t_height, 0, SOIL_LOAD_RGB);
+
+	GLuint texture2;
+	glGenTextures(1, &texture2);
+	glBindTexture(GL_TEXTURE_2D, texture2);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, t_width, t_height, 0, GL_RGB, GL_UNSIGNED_BYTE, image2);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	SOIL_free_image_data(image2);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	/* /TEXTURES */
+
 	/* With wrapper classes */
 	// 1. Create a VAO
 	VertexArray vao;
@@ -111,10 +180,12 @@ int main()
 	// 6. Bind the EBO
 	ebo.bind();
 	// 7. Set the vertex attributes
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
 	// 8 Unbind the VAO
 	vao.unbind();
 
@@ -141,11 +212,18 @@ int main()
 		//glDrawArrays(GL_TRIANGLES, 0, 3);
 		//glBindVertexArray(0);
 
-		GLfloat timeValue = glfwGetTime();
-		GLfloat greenValue = (sin(timeValue) / 2) + 0.5;
-		GLint vertexColorLocation = glGetUniformLocation(shader.getProgram(), "someUniform");
+		//GLfloat timeValue = glfwGetTime();
+		//GLfloat greenValue = (sin(timeValue) / 2) + 0.5;
+		//GLint vertexColorLocation = glGetUniformLocation(shader.getProgram(), "someUniform");
+
 		shader.use();
-		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+		//glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture1);
+		glUniform1i(glGetUniformLocation(shader.getProgram(), "ourTexture1"), 0);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, texture2);
+		glUniform1i(glGetUniformLocation(shader.getProgram(), "ourTexture2"), 1);
 		vao.bind();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		vao.unbind();
@@ -153,12 +231,6 @@ int main()
 		// Swap the screen buffers
 		glfwSwapBuffers(window);
 	}
-
-	// De-allocate used resources
-	//glDeleteVertexArrays(1, &VAO);
-	
-	//glDeleteBuffers(1, &VBO);
-	//glDeleteBuffers(1, &EBO);
 
 	// Terminate GLFW
 	glfwTerminate();
