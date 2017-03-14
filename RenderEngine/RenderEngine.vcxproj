@@ -115,6 +115,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\common\camera.cpp" />
+    <ClCompile Include="src\common\window.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\objects\element_buffer.cpp" />
     <ClCompile Include="src\objects\texture.cpp" />
@@ -126,11 +128,15 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="src\shaders\basicShader.vert" />
+    <None Include="src\shaders\lightingShader.frag" />
+    <None Include="src\shaders\lightingShader.vert" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\shaders\basicShader.frag" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\common\camera.h" />
+    <ClInclude Include="src\common\window.h" />
     <ClInclude Include="src\objects\element_buffer.h" />
     <ClInclude Include="src\objects\texture.h" />
     <ClInclude Include="src\objects\vertex_array.h" />

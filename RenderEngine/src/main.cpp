@@ -13,6 +13,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "common\window.h"
+#include "common\camera.h"
 #include "utils\fileUtils.h"
 #include "shaders\shader.h"
 #include "objects\element_buffer.h"
@@ -22,144 +24,199 @@
 
 using namespace fileUtilities;
 using namespace rendering;
-
-#define WIREFRAME_MODE false
+using namespace common;
 
 const GLuint WIDTH = 1920, HEIGHT = 1080;
 
 // Prototypes
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void do_movement();
+void basicOpenGL();
+void lightingOpenGL();
 
-//GLfloat vertices[] = {
-//	 // Positions         // Colors           // Texture Coords
-//	 0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // Top Right		0
-//	 0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // Bottom Right		1
-//	-0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // Bottom Left		2
-//	-0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // Top Left			3
-//};
+// Camera vectors
+glm::vec3 cameraPos		= glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront	= glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp		= glm::vec3(0.0f, 1.0f, 0.0f);
 
-GLfloat vertices[] = {
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-	0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-	0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+// Delta Time
+GLfloat deltaTime = 0.0f;	// Time between current frame and last frame
+GLfloat lastFrame = 0.0f;	// Time of last frame
 
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+// Key callback array
+bool keys[1024];
 
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+// Mouse position values
+GLfloat lastX = WIDTH / 2.0f;
+GLfloat lastY = HEIGHT / 2.0f;
+GLfloat yaw = -90.0f;
+GLfloat pitch = 0.0f;
 
-	0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+GLfloat fov = 45.0f;
 
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-	0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-	0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-	0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-	0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-	-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-	-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-};
-
-glm::vec3 cubePositions[] = {
-	glm::vec3(0.0f,  0.0f,  0.0f),
-	glm::vec3(2.0f,  5.0f, -15.0f),
-	glm::vec3(-1.5f, -2.2f, -2.5f),
-	glm::vec3(-3.8f, -2.0f, -12.3f),
-	glm::vec3(2.4f, -0.4f, -3.5f),
-	glm::vec3(-1.7f,  3.0f, -7.5f),
-	glm::vec3(1.3f, -2.0f, -2.5f),
-	glm::vec3(1.5f,  2.0f, -2.5f),
-	glm::vec3(1.5f,  0.2f, -1.5f),
-	glm::vec3(-1.3f,  1.0f, -1.5f)
-};
-
-GLuint indices[] = {  // Note that we start from 0!
-	0, 1, 3,		  // First Triangle
-	1, 2, 3			  // Second Triangle
-};
-
-
-std::string vertexShaderFilePath = "src/shaders/basicShader.vert";
-std::string fragmentShaderFilePath = "src/shaders/basicShader.frag";
-std::string woodTextureFilePath = "assets/wood_texture.jpg";
-std::string awesomeFaceFilePath = "assets/awesomeface.png";
+Window* window;
+Camera* camera;
 
 int main()
 {
 	std::cout << "Starting GLFW context, OpenGL 3.3" << std::endl;
 
-	// Init GLFW
-	if (!glfwInit())
-	{
-		std::cout << "Failed to initialize GLFW." << std::endl;
-	}
+	window = new Window(WIDTH, HEIGHT, "Basic Rendering Engine");
+	// Mouse callback
+	glfwSetCursorPosCallback(window->getWindow(), mouse_callback);
+	// Scroll callback
+	glfwSetScrollCallback(window->getWindow(), scroll_callback);
+	// Key callback
+	glfwSetKeyCallback(window->getWindow(), key_callback);
 
-	// Set GLFW options
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
-	// Create a GLFWwindow object
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Basic Rendering Project", nullptr, nullptr);
-	glfwMakeContextCurrent(window);
+	// Run main loop
+	basicOpenGL();
 
-	// Set Callbacks
-	glfwSetKeyCallback(window, key_callback);
+	// Terminate GLFW
+	glfwTerminate();
 
-	// Set this to true so GLEW knows to use a modern approach to retrieving function points and extensions
-	glewExperimental = GL_TRUE;
+	return 0;
+}
+
+void lightingOpenGL() {
+	// Assets
+	GLfloat vertices[] = {
+	    -0.5f, -0.5f, -0.5f,
+	     0.5f, -0.5f, -0.5f,
+	     0.5f,  0.5f, -0.5f,
+	     0.5f,  0.5f, -0.5f,
+	    -0.5f,  0.5f, -0.5f,
+	    -0.5f, -0.5f, -0.5f,
 	
-	// Init GLEW
-	if (glewInit() != GLEW_OK)
-	{
-		std::cout << "Failed to initialize GLEW." << std::endl;
-		return -1;
-	}
-
-	// Orthographic matrix (frustum view)
-	// Paramters: 1) left coordinates 2) right coordiantes 3) top coordinate 4) bottom coordinate 5) near plane 6) far plane
-	glm::mat4 ortho_perspective = glm::ortho(0.0f, (float)WIDTH, 0.0f, (float)HEIGHT, 0.1f, 100.0f);
-	// Perspective matrix 
-	// Parameters: 1) field of view 2) aspect ratio 3) near plane 4) far plane
-	glm::mat4 perspective_proj = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+	    -0.5f, -0.5f,  0.5f,
+	     0.5f, -0.5f,  0.5f,
+	     0.5f,  0.5f,  0.5f,
+	     0.5f,  0.5f,  0.5f,
+	    -0.5f,  0.5f,  0.5f,
+	    -0.5f, -0.5f,  0.5f,
 	
-	// Define viewport
-	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
-	glViewport(0, 0, WIDTH, HEIGHT);
+	    -0.5f,  0.5f,  0.5f,
+	    -0.5f,  0.5f, -0.5f,
+	    -0.5f, -0.5f, -0.5f,
+	    -0.5f, -0.5f, -0.5f,
+	    -0.5f, -0.5f,  0.5f,
+	    -0.5f,  0.5f,  0.5f,
+	
+	     0.5f,  0.5f,  0.5f,
+	     0.5f,  0.5f, -0.5f,
+	     0.5f, -0.5f, -0.5f,
+	     0.5f, -0.5f, -0.5f,
+	     0.5f, -0.5f,  0.5f,
+	     0.5f,  0.5f,  0.5f,
+	
+	    -0.5f, -0.5f, -0.5f,
+	     0.5f, -0.5f, -0.5f,
+	     0.5f, -0.5f,  0.5f,
+	     0.5f, -0.5f,  0.5f,
+	    -0.5f, -0.5f,  0.5f,
+	    -0.5f, -0.5f, -0.5f,
+	
+	    -0.5f,  0.5f, -0.5f,
+	     0.5f,  0.5f, -0.5f,
+	     0.5f,  0.5f,  0.5f,
+	     0.5f,  0.5f,  0.5f,
+	    -0.5f,  0.5f,  0.5f,
+	    -0.5f,  0.5f, -0.5f
+    };
+
+	// Light attributes
+	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+
+	std::string vertexShaderFilePath = "src/shaders/lightingShader.vert";
+	std::string fragmentShaderFilePath = "src/shaders/lightingShader.frag";
 
 	// Create a shader program
-	//GLuint program = LoadShader(vertexShaderFilePath.c_str(), fragmentShaderFilePath.c_str());
+	Shader shader(vertexShaderFilePath.c_str(), fragmentShaderFilePath.c_str());
+}
+
+void basicOpenGL() {
+	// Assets
+	GLfloat vertices[] = 
+	{
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+		 0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+		-0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+		-0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+	};
+
+	glm::vec3 cubePositions[] = 
+	{
+		glm::vec3( 0.0f,  0.0f,  0.0f),
+		glm::vec3( 2.0f,  5.0f, -15.0f),
+		glm::vec3(-1.5f, -2.2f, -2.5f),
+		glm::vec3(-3.8f, -2.0f, -12.3f),
+		glm::vec3( 2.4f, -0.4f, -3.5f),
+		glm::vec3(-1.7f,  3.0f, -7.5f),
+		glm::vec3( 1.3f, -2.0f, -2.5f),
+		glm::vec3( 1.5f,  2.0f, -2.5f),
+		glm::vec3( 1.5f,  0.2f, -1.5f),
+		glm::vec3(-1.3f,  1.0f, -1.5f)
+	};
+
+	GLuint indices[] = 
+	{					  // Note that we start from 0!
+		0, 1, 3,		  // First Triangle
+		1, 2, 3			  // Second Triangle
+	};
+
+	std::string vertexShaderFilePath = "src/shaders/basicShader.vert";
+	std::string fragmentShaderFilePath = "src/shaders/basicShader.frag";
+	std::string woodTextureFilePath = "assets/wood_texture.jpg";
+	std::string awesomeFaceFilePath = "assets/awesomeface.png";
+
+	// Create a shader program
 	Shader shader(vertexShaderFilePath.c_str(), fragmentShaderFilePath.c_str());
 
 	// Create textures
 	Texture texture1(woodTextureFilePath.c_str());
 	Texture texture2(awesomeFaceFilePath.c_str());
 
-	/* With wrapper classes */
 	// 1. Create a VAO
 	VertexArray vao;
 	// 2. Bind the VAO
@@ -182,54 +239,54 @@ int main()
 	// 8 Unbind the VAO
 	vao.unbind();
 
-	// Wireframe mode
-	if (WIREFRAME_MODE)
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
 	// Render loop
-	while (!glfwWindowShouldClose(window))
+	while (!window->shouldClose())
 	{
+		GLfloat currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
 		// Check if any events have been activated
 		glfwPollEvents();
+		do_movement();
 
 		// Clear the colorbuffer
-		glEnable(GL_DEPTH_TEST);
-		glClearColor(0.2f, 0.3f, 0.8f, 1.0f);
+		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		//glBindVertexArray(VAO);
-		//glDrawArrays(GL_TRIANGLES, 0, 3);
-		//glBindVertexArray(0);
-
-		//GLfloat timeValue = glfwGetTime();
-		//GLfloat greenValue = (sin(timeValue) / 2) + 0.5;
-		//GLint vertexColorLocation = glGetUniformLocation(shader.getProgram(), "someUniform");
-
+		// Activate shader
 		shader.use();
-		
+
 		// Activate the first texture level
 		glActiveTexture(GL_TEXTURE0);
 		texture1.bind();
 		glUniform1i(glGetUniformLocation(shader.getProgram(), "ourTexture1"), 0);
+
 		// Activate the second texture level
 		glActiveTexture(GL_TEXTURE1);
 		texture2.bind();
 		glUniform1i(glGetUniformLocation(shader.getProgram(), "ourTexture2"), 1);
 
-		
+		// MVP
 		glm::mat4 model;
-		glm::mat4 view;
 		glm::mat4 projection;
-		model = glm::rotate(model, (GLfloat)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-		view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-		projection = glm::perspective(glm::radians(45.0f), (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view;
+
+		// View matrix
+		view = camera->getViewMatrix();
+
+		// Projeciton matrix
+		projection = glm::perspective(camera->Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
+
+		// Get location ID
 		GLint modelLoc = glGetUniformLocation(shader.getProgram(), "model");
 		GLint viewLoc = glGetUniformLocation(shader.getProgram(), "view");
 		GLint projectionLoc = glGetUniformLocation(shader.getProgram(), "projection");
+
+		// Set shader uniforms to the glm matrices
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
 
 		vao.bind();
 		for (GLuint i = 0; i < 10; i++)
@@ -242,24 +299,77 @@ int main()
 
 			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		vao.unbind();
 
 		// Swap the screen buffers
-		glfwSwapBuffers(window);
+		window->update();
+	}
+}
+
+// Callback function for mouse movements
+bool firstMouse = true;
+void mouse_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	if (firstMouse)
+	{
+		lastX = xpos;
+		lastY = ypos;
+		firstMouse = false;
 	}
 
-	// Terminate GLFW
-	glfwTerminate();
+	GLfloat xoffset = xpos - lastX;
+	GLfloat yoffset = ypos - lastY;
+	lastX = xpos;
+	lastY = ypos;
 
-	return 0;
+	camera->processMouseMovement(xoffset, yoffset);
+}
+
+// Callback function for scroll wheel
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	camera->proccessMouseScroll(yoffset);
 }
 
 // Callback function for key strokes
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode) 
 {
+	static bool wireFrameMode = false;
+
+	// Application controls
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
+
+	// Wireframe mode
+	if (key == GLFW_KEY_GRAVE_ACCENT && action == GLFW_PRESS)
+	{
+		// Flip wireframe mode
+		wireFrameMode = !wireFrameMode;
+
+		if (wireFrameMode)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		else
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	}
+
+	if (key >= 0 && key < 1024) {
+		if (action == GLFW_PRESS)
+			keys[key] = true;
+		else if (action == GLFW_RELEASE)
+			keys[key] = false;
+	}
+}
+
+void do_movement() 
+{
+	if (keys[GLFW_KEY_W])
+		camera->processKeyboard(FORWARD, deltaTime);
+	if (keys[GLFW_KEY_A])
+		camera->processKeyboard(LEFT, deltaTime);
+	if (keys[GLFW_KEY_S])
+		camera->processKeyboard(BACKWARD, deltaTime);
+	if (keys[GLFW_KEY_D])
+		camera->processKeyboard(RIGHT, deltaTime);
 }

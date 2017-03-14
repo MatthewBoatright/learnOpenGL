@@ -36,10 +36,18 @@
     <ClCompile Include="src\objects\texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\common\window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\common\camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="src\shaders\basicShader.vert" />
+    <None Include="src\shaders\lightingShader.frag" />
+    <None Include="src\shaders\lightingShader.vert" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\shaders\basicShader.frag" />
@@ -61,6 +69,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\objects\texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common\window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\common\camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
