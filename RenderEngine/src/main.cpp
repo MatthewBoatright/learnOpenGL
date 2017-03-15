@@ -73,8 +73,9 @@ int main()
 
 	camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
-	// Run main loop
-	basicOpenGL();
+	// Select demonstration
+	//basicOpenGL();
+	lightingOpenGL();
 
 	// Terminate GLFW
 	glfwTerminate();
@@ -131,11 +132,89 @@ void lightingOpenGL() {
 	// Light attributes
 	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
-	std::string vertexShaderFilePath = "src/shaders/lightingShader.vert";
-	std::string fragmentShaderFilePath = "src/shaders/lightingShader.frag";
+	Shader lampShader("src/shaders/lampShader.vert", "src/shaders/lampShader.frag");
+	Shader lightingShader("src/shaders/lightingShader.vert", "src/shaders/lightingShader.frag");
 
-	// Create a shader program
-	Shader shader(vertexShaderFilePath.c_str(), fragmentShaderFilePath.c_str());
+	VertexArray containerVAO;
+	VertexBuffer vbo(vertices, sizeof(vertices));
+
+	vbo.bind();
+	containerVAO.bind();
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);	
+	containerVAO.unbind();
+
+	VertexArray lightVAO;
+
+	lightVAO.bind();
+	vbo.bind();
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	lightVAO.unbind();
+
+	while (!window->shouldClose()) {
+		GLfloat currentFrame = glfwGetTime();
+		deltaTime = currentFrame - lastFrame;
+		lastFrame = currentFrame;
+
+		// Check if any events have been activated
+		glfwPollEvents();
+		do_movement();
+
+		// Clear the colorbuffer
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		lightingShader.use();
+		GLint objectColorLoc = glGetUniformLocation(lightingShader.getProgram(), "objectColor");
+		GLint lightColorLoc = glGetUniformLocation(lightingShader.getProgram(), "lightColor");
+		glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
+		glUniform3f(lightColorLoc, 1.0f, 0.5f, 1.0f);
+
+		// MVP
+		glm::mat4 model;
+		glm::mat4 projection;
+		glm::mat4 view;
+		// View matrix
+		view = camera->getViewMatrix();
+		// Projeciton matrix
+		projection = glm::perspective(camera->Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
+
+		// Get location ID
+		GLint modelLoc = glGetUniformLocation(lightingShader.getProgram(), "model");
+		GLint viewLoc = glGetUniformLocation(lightingShader.getProgram(), "view");
+		GLint projectionLoc = glGetUniformLocation(lightingShader.getProgram(), "projection");
+
+		// Set shader uniforms to the glm matrices
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+		containerVAO.bind();
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		containerVAO.unbind();
+
+		lampShader.use();
+
+		modelLoc = glGetUniformLocation(lampShader.getProgram(), "model");
+		viewLoc = glGetUniformLocation(lampShader.getProgram(), "view");
+		projectionLoc = glGetUniformLocation(lampShader.getProgram(), "projection");
+
+		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+
+		model = glm::mat4();
+		model = glm::translate(model, lightPos);
+		model = glm::scale(model, glm::vec3(0.2f));
+
+		lightVAO.bind();
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		lightVAO.unbind();		
+
+		// Swap the screen buffers
+		window->update();
+	}
 }
 
 void basicOpenGL() {
@@ -205,13 +284,11 @@ void basicOpenGL() {
 		1, 2, 3			  // Second Triangle
 	};
 
-	std::string vertexShaderFilePath = "src/shaders/basicShader.vert";
-	std::string fragmentShaderFilePath = "src/shaders/basicShader.frag";
 	std::string woodTextureFilePath = "assets/wood_texture.jpg";
 	std::string awesomeFaceFilePath = "assets/awesomeface.png";
 
 	// Create a shader program
-	Shader shader(vertexShaderFilePath.c_str(), fragmentShaderFilePath.c_str());
+	Shader shader("src/shaders/basicShader.vert", "src/shaders/basicShader.frag");
 
 	// Create textures
 	Texture texture1(woodTextureFilePath.c_str());
