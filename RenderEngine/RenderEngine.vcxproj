@@ -128,6 +128,8 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="src\shaders\basicShader.vert" />
+    <None Include="src\shaders\lampShader.frag" />
+    <None Include="src\shaders\lampShader.vert" />
     <None Include="src\shaders\lightingShader.frag" />
     <None Include="src\shaders\lightingShader.vert" />
   </ItemGroup>

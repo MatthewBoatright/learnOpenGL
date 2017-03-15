@@ -48,6 +48,8 @@
     <None Include="src\shaders\basicShader.vert" />
     <None Include="src\shaders\lightingShader.frag" />
     <None Include="src\shaders\lightingShader.vert" />
+    <None Include="src\shaders\lampShader.vert" />
+    <None Include="src\shaders\lampShader.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="src\shaders\basicShader.frag" />
