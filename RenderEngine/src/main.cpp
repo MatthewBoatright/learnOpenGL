@@ -63,6 +63,7 @@ int main()
 {
 	std::cout << "Starting GLFW context, OpenGL 3.3" << std::endl;
 
+	// Create the window
 	window = new Window(WIDTH, HEIGHT, "Basic Rendering Engine");
 	// Mouse callback
 	glfwSetCursorPosCallback(window->getWindow(), mouse_callback);
@@ -71,10 +72,10 @@ int main()
 	// Key callback
 	glfwSetKeyCallback(window->getWindow(), key_callback);
 
+	// Create the camera
 	camera = new Camera(glm::vec3(0.0f, 0.0f, 3.0f));
 
 	// Select demonstration
-	//basicOpenGL();
 	lightingOpenGL();
 
 	// Terminate GLFW
@@ -84,7 +85,8 @@ int main()
 }
 
 void lightingOpenGL() {
-	// Assets
+
+	// Vertex data for our sample cubes
 	GLfloat vertices[] = {
 	    -0.5f, -0.5f, -0.5f,
 	     0.5f, -0.5f, -0.5f,
@@ -132,20 +134,27 @@ void lightingOpenGL() {
 	// Light attributes
 	glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 
+	// Compile and link the shader objects
 	Shader lampShader("src/shaders/lampShader.vert", "src/shaders/lampShader.frag");
 	Shader lightingShader("src/shaders/lightingShader.vert", "src/shaders/lightingShader.frag");
 
+	// We'll use two vertex arrays for this demo
+	// One for the light source and the other for the cube (container)
+	VertexArray lightVAO;
 	VertexArray containerVAO;
+
+	// Load the vertex buffer with our cube data
+	// We'll use the same cube shape for both vertex arrays
 	VertexBuffer vbo(vertices, sizeof(vertices));
 
-	vbo.bind();
+	// Load the data into the buffers
+	// Cube data:
 	containerVAO.bind();
+	vbo.bind();
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);	
 	containerVAO.unbind();
-
-	VertexArray lightVAO;
-
+	// Light data:
 	lightVAO.bind();
 	vbo.bind();
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
@@ -153,11 +162,12 @@ void lightingOpenGL() {
 	lightVAO.unbind();
 
 	while (!window->shouldClose()) {
+		// Math for the callback functions
 		GLfloat currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
 
-		// Check if any events have been activated
+		// Check if any events have been activated and act upon them
 		glfwPollEvents();
 		do_movement();
 
@@ -165,13 +175,15 @@ void lightingOpenGL() {
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// Use the newly made lighting shader for the cube shape
 		lightingShader.use();
+		// Get the uniform locations from the shader
 		GLint objectColorLoc = glGetUniformLocation(lightingShader.getProgram(), "objectColor");
 		GLint lightColorLoc = glGetUniformLocation(lightingShader.getProgram(), "lightColor");
+		// Set the values of the shader
 		glUniform3f(objectColorLoc, 1.0f, 0.5f, 0.31f);
 		glUniform3f(lightColorLoc, 1.0f, 0.5f, 1.0f);
-
-		// MVP
+		// Create the MVP matrices
 		glm::mat4 model;
 		glm::mat4 projection;
 		glm::mat4 view;
@@ -179,40 +191,41 @@ void lightingOpenGL() {
 		view = camera->getViewMatrix();
 		// Projeciton matrix
 		projection = glm::perspective(camera->Zoom, (GLfloat)WIDTH / (GLfloat)HEIGHT, 0.1f, 100.0f);
-
 		// Get location ID
 		GLint modelLoc = glGetUniformLocation(lightingShader.getProgram(), "model");
 		GLint viewLoc = glGetUniformLocation(lightingShader.getProgram(), "view");
 		GLint projectionLoc = glGetUniformLocation(lightingShader.getProgram(), "projection");
-
 		// Set shader uniforms to the glm matrices
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
+		// Render the cube
 		containerVAO.bind();
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		containerVAO.unbind();
 
+		// Use the newly made lamp shader for the light source
 		lampShader.use();
-
+		// MVP matrices
 		modelLoc = glGetUniformLocation(lampShader.getProgram(), "model");
 		viewLoc = glGetUniformLocation(lampShader.getProgram(), "view");
 		projectionLoc = glGetUniformLocation(lampShader.getProgram(), "projection");
-
+		// Set the uniforms
 		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 		glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
+		// Scale the lamp model down
 		model = glm::mat4();
 		model = glm::translate(model, lightPos);
 		model = glm::scale(model, glm::vec3(0.2f));
 
+		// Render the light source
 		lightVAO.bind();
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		lightVAO.unbind();		
 
-		// Swap the screen buffers
+		// Update the screen
 		window->update();
 	}
 }
